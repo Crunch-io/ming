@@ -6,7 +6,7 @@ version = '0.1'
 setup(name='Ming',
       version=version,
       description="Bringing order to Mongo since 2009",
-      long_description="""\
+      classifiers = [
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
@@ -14,8 +14,9 @@ setup(name='Ming',
         'Programming Language :: Python',
         'Topic :: Database',
         'Topic :: Software Development :: Libraries :: Python Modules',
-""",
-      classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+        ],
+      long_description='''Database mapping layer for MongoDB on Python. Includes schema enforcement and some facilities for schema migration.
+''',
       keywords='mongo, pymongo',
       author='Rick Copeland',
       author_email='rick@geek.net',
