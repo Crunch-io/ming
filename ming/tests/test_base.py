@@ -10,6 +10,7 @@ from ming.base import Object, Document, Field, Cursor
 from ming import schema as S
 from ming.session import Session
 from bson import ObjectId
+from pymongo.errors import AutoReconnect
 
 def mock_datastore():
     ds = mock.Mock()
@@ -200,6 +201,14 @@ class TestIndexes(TestCase):
             in args,
             args
         )
+
+    @mock.patch('ming.session.Session.ensure_index')
+    def test_ensure_indexes_slave(self, ensure_index):
+        # on a slave, an error will be thrown, but it should be swallowed
+        ensure_index.side_effect = AutoReconnect()
+        doc = self.MyDoc.m
+
+        assert ensure_index.called
 
 class TestCursor(TestCase):
 

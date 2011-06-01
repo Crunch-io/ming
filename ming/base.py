@@ -5,8 +5,12 @@ import hashlib
 from datetime import datetime
 from collections import defaultdict
 from functools import update_wrapper
+import logging
 
 import bson
+from pymongo.errors import ConnectionFailure
+
+log = logging.getLogger(__name__)
 
 def build_mongometa(bases, dct):
     mm_bases = []
@@ -93,7 +97,10 @@ class Manager(object):
         self.instance = instance
         self.cls = cls
         if self.session is not None:
-            self.ensure_indexes()
+            try:
+                self.ensure_indexes()
+            except ConnectionFailure:
+                log.debug('Error when running ensure_indexes automatically', exc_info=True)
 
     def __call__(self, session):
         '''In order to use an alternate session, just use Class.m(other_session)'''
