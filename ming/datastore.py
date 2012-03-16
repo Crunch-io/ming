@@ -1,19 +1,35 @@
 from __future__ import with_statement
 import time
 import logging
-
 from threading import Lock
 
 from pymongo.connection import Connection
 from pymongo.master_slave_connection import MasterSlaveConnection
 
+from ming.utils import retry_on_autoreconnect
 from . import mim
+
+class AutoRetryConnection(Connection):
+    '''Simple child class that retries (once) to send messages on
+    AutoReconnect'''
+
+    @retry_on_autoreconnect
+    def _send_message(self, message, with_last_error=False):
+        return super(AutoRetryConnection, self)._send_message(
+            message, with_last_error=with_last_error)
+
+    @retry_on_autoreconnect
+    def _send_message_with_response(
+        self, message, _must_use_master=False, **kwargs):
+        return super(AutoRetryConnection, self)._send_message_with_response(
+            message, _must_use_master=_must_use_master, **kwargs)
 
 class Engine(object):
     '''Proxy for a pymongo connection, providing some url parsing'''
 
     def __init__(self, master='mongodb://localhost:27017/', slave=None,
-                 connect_retry=3, use_gevent=False, **connect_args):
+                 connect_retry=3, use_gevent=False, use_auto_retry=False,
+                 **connect_args):
         self._log = logging.getLogger(__name__)
         self._conn = None
         self._lock = Lock()
@@ -22,6 +38,8 @@ class Engine(object):
         if use_gevent:
             from . import async
             self.ConnectionClass = async.AsyncConnection
+        elif use_auto_retry:
+            self.ConnectionClass = AutoRetryConnection
         else:
             self.ConnectionClass = Connection
         self.configure(master, slave)

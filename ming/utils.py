@@ -2,8 +2,23 @@ import cgi
 import urllib
 from threading import local
 
-import pymongo
+from decorator import decorator
 
+import pymongo
+from pymongo.errors import AutoReconnect
+
+@decorator
+def retry_on_autoreconnect(func, *args, **kwargs):
+    '''Simple wrapper that will retry a function if it raises the
+    AutoReconnect error'''
+    try:
+        return func(*args, **kwargs)
+    except AutoReconnect:
+        print 'reconnect'
+        import pdb; pdb.set_trace()
+        return func(*args, **kwargs)
+
+        
 class EmptyClass(object): pass
 
 class LazyProperty(object):
