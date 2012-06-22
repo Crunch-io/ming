@@ -5,10 +5,34 @@ import gql_lex, gql_yacc
 
 def main():
     lexer = lex.lex(module=gql_lex)
-    parser = yacc.yacc(module=gql_yacc)
-    for stmt in test_generator():
+    filter_parser = yacc.yacc(
+        module=gql_yacc,
+        start='filter',
+        tabmodule='parsetab_gql_filter',
+        debugfile='parser_gql_filter.out')
+    filter_parser.getbind = lambda name: '$' + repr(name)
+    for f in filters:
+        print 'Parse %r' % f
+        result = filter_parser.parse(f, lexer=lexer)
+        print '''find(
+            %(spec)r,
+            limit=%(limit)r,
+            sort=%(sort)r''' % result
+
+    statement_parser = yacc.yacc(
+        module=gql_yacc,
+        start='statement',
+        tabmodule='parsetab_gql_statement',
+        debugfile='parser_gql_statement.out')
+    statement_parser.getbind = lambda name: '$' + repr(name)
+    for stmt in statements:
         print 'Parse %r' % stmt
-        print parser.parse(stmt, lexer=lexer)
+        result = statement_parser.parse(stmt, lexer=lexer)
+        print '''db.%(collection)s.find(
+            %(spec)r,
+            fields=%(fields)r,
+            limit=%(limit)r,
+            sort=%(sort)r''' % result
 
 def test_generator():
     for f in filters:

@@ -26,8 +26,6 @@ t_LT = r'<'
 t_LE = r'<='
 t_GT = r'>'
 t_GE = r'>='
-t_STRING = r"""\'(\\.|[^"])*\'"""
-
 
 t_ignore = ' \t'
 
@@ -43,6 +41,11 @@ def t_BIND_NAME(t):
 def t_NUMBER(t):
     r'\d+'
     t.value = int(t.value)
+    return t
+
+def t_STRING(t):
+    r"""\'(\\.|[^"])*\'"""
+    t.value = t.value[1:-1]
     return t
 
 def t_ID(t):
