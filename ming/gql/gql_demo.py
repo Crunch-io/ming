@@ -2,6 +2,7 @@ import sys
 from ply import lex, yacc
 
 import gql_lex, gql_yacc
+import gql_main
 
 def main():
     lexer = lex.lex(module=gql_lex)

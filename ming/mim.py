@@ -453,9 +453,13 @@ class Cursor(object):
 
     def next(self):
         value = self.iterator.next()
-        value = bcopy(value)
+        cvalue = bcopy(value)
+        if isinstance(self._fields, list):
+            self._fields = dict((f, 1) for f in self._fields)
         if self._fields:
-            value = dict((k, value[k]) for k in self._fields)
+            value = dict((k, cvalue[k]) for k in self._fields)
+            if self._fields.get('_id', 1):
+                value['_id'] = cvalue['_id']
         return wrap_as_class(value, self._as_class)
 
     def sort(self, key_or_list, direction=ASCENDING):
