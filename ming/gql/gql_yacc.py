@@ -1,4 +1,4 @@
-from gql_lex import tokens
+from gql_base import tokens, SyntaxError
 
 BSON_OPERATORS = {
     '=': '$eq',
@@ -56,10 +56,13 @@ def p_expr_1(p):
             | ID LE rvalue
             | ID GT rvalue
             | ID GE rvalue
-            | ID IS rvalue
     '''
     operator = BSON_OPERATORS[p[2]]
     p[0] = { p[1]: { operator: p[3] } }
+
+def p_expr_ancestor(p):
+    '''expr : ANCESTOR IS rvalue'''
+    raise SyntaxError, 'Ancestor lookup not supported'
 
 def p_expr_1a(p):
     '''expr : ID IN LPAREN literal_list RPAREN'''
@@ -167,6 +170,5 @@ def p_empty(p):
 
 # Error rule for syntax errors
 def p_error(p): # pragma no cover
-    print "Syntax error in input!"
-    import pdb; pdb.set_trace()
+    raise SyntaxError, p
 

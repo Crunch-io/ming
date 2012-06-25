@@ -1,24 +1,4 @@
-reserved = {
-    'select': 'SELECT',
-    'from': 'FROM',
-    'where': 'WHERE',
-    'order': 'ORDER',
-    'by': 'BY',
-    'desc': 'DESC',
-    'asc': 'ASC',
-    'and': 'AND',
-    'or': 'OR',
-    'is': 'IS',
-    'in': 'IN',
-    'limit': 'LIMIT',
-    'offset': 'OFFSET',
-    'true': 'TRUE',
-    'false': 'FALSE' }
-
-tokens = ['STAR', 'COMMA', 'ID', 'BIND_POS', 'BIND_NAME',
-          'EQ', 'NE', 'LT', 'LE', 'GT', 'GE',
-          'NUMBER', 'STRING', 'LPAREN', 'RPAREN'
-          ]  + reserved.values()
+from gql_base import tokens, reserved
 
 t_STAR = r'\*'
 t_COMMA = r','

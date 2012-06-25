@@ -3,11 +3,12 @@ Test the gql layer
 '''
 
 from unittest import TestCase
+from nose.tools import assert_raises
 
 import bson
 
 from ming import mim
-from ming.gql import gql_statement, gql_filter
+from ming import gql
 
 class TestFilter(TestCase):
 
@@ -20,28 +21,28 @@ class TestFilter(TestCase):
         doc = dict(a=5, b=6, _id=bson.ObjectId())
         self.collection.insert(doc)
         self.collection.insert({})
-        result = list(gql_filter(self.collection, 'WHERE a=5'))
+        result = list(gql.gql_filter(self.collection, 'WHERE a=5'))
         self.assertEqual(result, [ doc ])
 
     def test_find_in(self):
         doc = dict(a=1, b=6, _id=bson.ObjectId())
         self.collection.insert(doc)
         self.collection.insert({})
-        result = list(gql_filter(self.collection, 'WHERE a IN (1,2,3)'))
+        result = list(gql.gql_filter(self.collection, 'WHERE a IN (1,2,3)'))
         self.assertEqual(result, [ doc ])
 
     def test_find_bind_pos(self):
         doc = dict(a=5, b=6, _id=bson.ObjectId())
         self.collection.insert(doc)
         self.collection.insert({})
-        result = list(gql_filter(self.collection, 'WHERE a=:1', 5))
+        result = list(gql.gql_filter(self.collection, 'WHERE a=:1', 5))
         self.assertEqual(result, [ doc ])
 
     def test_find_bind_name(self):
         doc = dict(a=5, b=6, _id=bson.ObjectId())
         self.collection.insert(doc)
         self.collection.insert({})
-        result = list(gql_filter(self.collection, 'WHERE a=:bar', bar=5))
+        result = list(gql.gql_filter(self.collection, 'WHERE a=:bar', bar=5))
         self.assertEqual(result, [ doc ])
 
 class TestStatement(TestCase):
@@ -55,21 +56,21 @@ class TestStatement(TestCase):
         doc = dict(a=5, b=6, _id=bson.ObjectId())
         self.collection.insert(doc)
         self.collection.insert({})
-        result = list(gql_statement(self.db, 'SELECT * FROM foo WHERE a=5'))
+        result = list(gql.gql_statement(self.db, 'SELECT * FROM foo WHERE a=5'))
         self.assertEqual(result, [ doc ])
 
     def test_find_project(self):
         doc = dict(a=5, b=6, _id=bson.ObjectId())
         self.collection.insert(doc)
         self.collection.insert({})
-        result = list(gql_statement(self.db, 'SELECT b FROM foo WHERE a=5'))
+        result = list(gql.gql_statement(self.db, 'SELECT b FROM foo WHERE a=5'))
         self.assertEqual(result, [ dict(_id=doc['_id'], b=6) ])
 
     def test_find_key(self):
         doc = dict(a=5, b=6, _id=bson.ObjectId())
         self.collection.insert(doc)
         self.collection.insert({})
-        result = list(gql_statement(self.db, 'SELECT __key__ FROM foo WHERE a=5'))
+        result = list(gql.gql_statement(self.db, 'SELECT __key__ FROM foo WHERE a=5'))
         self.assertEqual(result, [ dict(_id=doc['_id']) ] )
 
 def test_parser():
@@ -102,14 +103,20 @@ def test_parser():
         'OFFSET 2',
         'LIMIT 4 OFFSET 5',
         )
-    for gql in statements:
-        yield _check_statement, db, gql, args, kwargs
-    for gql in filters:
-        yield _check_filter, collection, gql, args, kwargs
+    bad_filters = (
+        'WHERE ANCESTOR IS 5',
+        )
+    for sgql in statements:
+        yield _check_statement, db, sgql, args, kwargs
+    for sgql in filters:
+        yield _check_filter, collection, sgql, args, kwargs
+    for sgql in bad_filters:
+        yield assert_raises, gql.SyntaxError, _check_filter, collection, sgql, args, kwargs
 
 
-def _check_statement(db, gql, args, kwargs):
-    return gql_statement(db, gql, *args, **kwargs)
+def _check_statement(db, sgql, args, kwargs):
+    return gql.gql_statement(db, sgql, *args, **kwargs)
 
-def _check_filter(collection, gql, args, kwargs):
-    return gql_filter(collection, gql, *args, **kwargs)
+def _check_filter(collection, sgql, args, kwargs):
+    return gql.gql_filter(collection, sgql, *args, **kwargs)
+
