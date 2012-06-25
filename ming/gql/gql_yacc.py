@@ -49,33 +49,41 @@ def p_where_1(p):
     'where : WHERE expr'
     p[0] = dict(spec=p[2])
 
-def p_expr_1(p):
-    '''expr : ID EQ rvalue
-            | ID NE rvalue
-            | ID LT rvalue
-            | ID LE rvalue
-            | ID GT rvalue
-            | ID GE rvalue
+def p_expr(p):
+    'expr : and_expr'
+    p[0] = p[1]
+
+def p_and_expr_0(p):
+    'and_expr : prim_expr'
+    p[0] = p[1]
+
+def p_and_expr_1(p):
+    'and_expr : and_expr AND prim_expr'
+    p[0] = dict(p[1])
+    p[0].update(p[3])
+
+def p_prim_expr_ancestor(p):
+    '''prim_expr : ANCESTOR IS rvalue'''
+    raise SyntaxError, 'Ancestor lookup not supported'
+
+def p_prim_expr_binop(p):
+    '''prim_expr : ID EQ rvalue
+                 | ID NE rvalue
+                 | ID LT rvalue
+                 | ID LE rvalue
+                 | ID GT rvalue
+                 | ID GE rvalue
     '''
     operator = BSON_OPERATORS[p[2]]
     p[0] = { p[1]: { operator: p[3] } }
 
-def p_expr_ancestor(p):
-    '''expr : ANCESTOR IS rvalue'''
-    raise SyntaxError, 'Ancestor lookup not supported'
-
-def p_expr_1a(p):
-    '''expr : ID IN LPAREN literal_list RPAREN'''
+def p_expr_in(p):
+    '''prim_expr : ID IN LPAREN literal_list RPAREN'''
     p[0] = { p[1]: { '$in': p[4] } }
 
-def p_expr_1b(p):
+def p_expr_bind(p):
     '''expr : ID IN bindval'''
     p[0] = { p[1]: { '$in': p[3] } }
-
-def p_expr_2(p):
-    '''expr : expr AND expr'''
-    p[0] = dict(p[1])
-    p[0].update(p[3])
 
 def p_rvalue(p):
     '''rvalue : literal
