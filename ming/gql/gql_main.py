@@ -5,6 +5,11 @@ import gql_lex, gql_yacc
 lexer = lex.lex(module=gql_lex)
 
 def gql_statement(database, gql, *args, **kwargs):
+    parse_result, cursor = gql_statement_with_context(
+        database, gql, *args, **kwargs)
+    return cursor
+
+def gql_statement_with_context(database, gql, *args, **kwargs):
     parser = yacc.yacc(
         module=gql_yacc,
         start='statement',
@@ -12,8 +17,9 @@ def gql_statement(database, gql, *args, **kwargs):
         debugfile='parser_gql_statement.out')
     parser.getbind = Binder(*args, **kwargs)
     result = parser.parse(gql, lexer=lexer)
+    parse_result = dict(result)
     collection = database[result.pop('collection')]
-    return collection.find(**result)
+    return parse_result, collection.find(**result)
 
 def gql_filter(collection, gql, *args, **kwargs):
     parser = yacc.yacc(

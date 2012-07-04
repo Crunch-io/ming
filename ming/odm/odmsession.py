@@ -25,6 +25,10 @@ class ODMSession(object):
     def register_extension(self, extension):
         self.extensions.append(extension(self))
 
+    @property
+    def db(self):
+        return self.impl.db
+
     @classmethod
     def by_name(cls, name):
         if name in cls._registry:

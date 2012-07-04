@@ -1,13 +1,11 @@
 from gql_base import tokens, SyntaxError
 
 BSON_OPERATORS = {
-    '=': '$eq',
     '!=': '$ne',
     '<': '$lt',
     '<=': '$le',
     '>': '$gt',
-    '>=': '$ge',
-    'IS': '$eq' }
+    '>=': '$ge' }
 
 def p_statement(p):
     'statement : SELECT columns FROM ID filter'
@@ -67,8 +65,7 @@ def p_prim_expr_ancestor(p):
     raise SyntaxError, 'Ancestor lookup not supported'
 
 def p_prim_expr_binop(p):
-    '''prim_expr : ID EQ rvalue
-                 | ID NE rvalue
+    '''prim_expr : ID NE rvalue
                  | ID LT rvalue
                  | ID LE rvalue
                  | ID GT rvalue
@@ -76,6 +73,10 @@ def p_prim_expr_binop(p):
     '''
     operator = BSON_OPERATORS[p[2]]
     p[0] = { p[1]: { operator: p[3] } }
+
+def p_prim_expr_eq(p):
+    '''prim_expr : ID EQ rvalue'''
+    p[0] = { p[1]: p[3] }
 
 def p_expr_in(p):
     '''prim_expr : ID IN LPAREN literal_list RPAREN'''
@@ -154,7 +155,7 @@ def p_direction_1(p):
 
 def p_limit_0(p):
     '''limit : empty'''
-    p[0] = dict(limit=None)
+    p[0] = dict(limit=0)
 
 def p_limit_1(p):
     '''limit : LIMIT NUMBER'''
@@ -166,7 +167,7 @@ def p_limit_2(p):
 
 def p_offset_0(p):
     '''offset : empty'''
-    p[0] = dict(skip=None)
+    p[0] = dict(skip=0)
 
 def p_offset_1(p):
     '''offset : OFFSET NUMBER'''
