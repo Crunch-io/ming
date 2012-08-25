@@ -5,6 +5,14 @@ import ming.datastore
 from ming import Document, Field
 from ming import schema as S
 
+class TestSchemaDefaults(TestCase):
+
+    def test_nested_defaults(self):
+        schema = S.SchemaItem.make(dict(
+                x=dict(
+                    y=S.String(if_missing=lambda:'foo'))))
+        self.assertEqual(schema.validate({}), dict(x=dict(y='foo')))
+            
 class TestQuerySafety(TestCase):
 
     def setUp(self):
