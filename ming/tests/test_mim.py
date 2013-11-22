@@ -501,6 +501,10 @@ class TestCollection(TestCase):
         result = self.bind.db.coll.find({}, limit=2)
         result = list(result)
         self.assertEqual(len(result), 2)
+        # following pymongo convention, `limit=0` means no limit
+        result = self.bind.db.coll.find({}, limit=0)
+        result = list(result)
+        self.assertEqual(len(result), 5)
 
     def test_find_with_slice_skip(self):
         for i in range(5):

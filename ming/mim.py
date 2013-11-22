@@ -512,7 +512,7 @@ class Cursor(object):
             result = sorted(result, cmp=cursor_comparator(self._sort))
         if self._skip is not None:
             result = itertools.islice(result, self._skip, sys.maxint)
-        if self._limit is not None:
+        if self._limit:
             result = itertools.islice(result, abs(self._limit))
         return iter(result)
 
