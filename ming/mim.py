@@ -391,6 +391,23 @@ class Collection(collection.Collection):
             cur = cur.sort(sort)
         return cur
 
+    def aggregate(self, pipeline, **kwargs):
+        #punt on aggregates for now
+        return []
+
+        #possible solution might look like this:
+        current = None
+        for item in pipeline:
+            operation = item.keys()[0]
+            args = item[operation]
+            if operation == '$match':
+                current = self.find(args)
+            elif operation == '$project':
+                current = _project(current, args)
+            elif operation == '$group':
+                _group(current, args)
+        return list(current)
+
     def find_one(self, filter_or_id=None, *args, **kwargs):
         if filter_or_id is not None and not isinstance(filter_or_id, dict):
             filter_or_id = {"_id": filter_or_id}
@@ -1267,6 +1284,9 @@ def _traverse_doc(doc, key):
     for part in path[:-1]:
         cur = cur.setdefault(part, {})
     return cur, path[-1]
+
+def _group(docs, fields):
+    return docs
 
 def _project(doc, fields):
     result = {}
