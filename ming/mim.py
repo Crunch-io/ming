@@ -57,6 +57,8 @@ from pymongo.results import DeleteResult, UpdateResult, InsertManyResult, Insert
 
 log = logging.getLogger(__name__)
 
+log.setLevel(logging.ERROR)
+
 
 class Connection(object):
     _singleton = None
@@ -531,6 +533,8 @@ class Collection(collection.Collection):
         for doc, mspec in self._find(spec):
             self._deindex(doc)
             mspec.update(updates)
+            doc = mspec.as_dict()
+            self._data[doc['_id']] = doc
             self._index(doc)
             result['n'] += 1
             result['nModified'] += 1
@@ -1080,6 +1084,21 @@ class MatchDoc(Match):
                 self._doc[k] = MatchDoc(v)
             else:
                 self._doc[k] = v
+
+    def _as_dict(self, d):
+        if isinstance(d, dict):
+            return {k: self._as_dict(v) for k, v in d.iteritems()}
+        if isinstance(d, MatchDoc):
+            return {k: self._as_dict(v) for k, v in d.iteritems()}
+        if isinstance(d, list):
+            return [self._as_dict(i) for i in d]
+        if isinstance(d, MatchList):
+            return [self._as_dict(i) for i in d]
+        return d
+
+    def as_dict(self):
+        return self._as_dict(self)
+
     def traverse(self, first, *rest):
         if not rest:
             if '.' in first:
