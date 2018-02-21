@@ -1173,6 +1173,8 @@ class MatchList(Match):
     def __eq__(self, o):
         return isinstance(o, MatchList) and self._doc == o._doc
     def __contains__(self, item):
+        if isinstance(item, MatchDoc):
+            item = item.as_dict()
         return self._doc.__contains__(item)
     def __hash__(self):
         return hash(self._doc)
@@ -1264,6 +1266,8 @@ def compare(op, a, b):
                     return True
             return False
         else:
+            if isinstance(a, MatchDoc):
+                a = a.as_dict()
             return a in b
     if op == '$nin': return a not in b
     if op == '$exists':
