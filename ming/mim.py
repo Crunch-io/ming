@@ -1070,7 +1070,7 @@ class Match(object):
         l = subdoc.setdefault(key, [])
         subdoc[key] = [
             vv for vv in l
-            if not compare('$in', vv, arg) ]
+            if not compare('$in', vv._doc, arg) ]
 
 
 class MatchDoc(Match):
@@ -1128,8 +1128,8 @@ class MatchDoc(Match):
         self._doc[key] = value
         self._orig[key] = value
     def setdefault(self, key, default):
-        self._doc.setdefault(key, default)
-        return self._orig.setdefault(key, default)
+        self._orig.setdefault(key, default)
+        return self._doc.setdefault(key, default)
     def keys(self):
         return self._doc.keys()
 
@@ -1209,6 +1209,9 @@ class MatchList(Match):
             self._orig.append(None)
         self._doc[key] = default
         self._orig[key] = default
+    def append(self, item):
+        self._doc.append(item)
+        self._orig.append(item)
 
 
 def _parse_query(v):
