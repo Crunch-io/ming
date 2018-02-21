@@ -1070,7 +1070,7 @@ class Match(object):
         l = subdoc.setdefault(key, [])
         subdoc[key] = [
             vv for vv in l
-            if not compare('$in', vv._doc, arg) ]
+            if not compare('$in', vv, arg) ]
 
 
 class MatchDoc(Match):
@@ -1172,6 +1172,8 @@ class MatchList(Match):
 
     def __eq__(self, o):
         return isinstance(o, MatchList) and self._doc == o._doc
+    def __contains__(self, item):
+        return self._doc.__contains__(item)
     def __hash__(self):
         return hash(self._doc)
     def __repr__(self):
