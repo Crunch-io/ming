@@ -16,13 +16,15 @@ class TestRelation(TestCase):
     def setUp(self):
         self.datastore = create_datastore('mim:///test_db')
         self.session = ThreadLocalODMSession(Session(bind=self.datastore))
-        class Parent(MappedClass):
+        class TestRelationParent(MappedClass):
+            """This class _must_ have a unique class name or it will conflict
+                with other tests."""
             class __mongometa__:
                 name='parent'
                 session = self.session
             _id = FieldProperty(S.ObjectId)
         Mapper.compile_all()
-        self.Parent = Parent
+        self.Parent = TestRelationParent
         self.create_app =  TestApp(MingMiddleware(self._wsgi_create_object))
         self.remove_app =  TestApp(MingMiddleware(self._wsgi_remove_object))
         self.remove_exc =  TestApp(MingMiddleware(self._wsgi_remove_object_exc))

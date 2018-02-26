@@ -393,11 +393,11 @@ class Collection(collection.Collection):
             cur = cur.sort(sort)
         return cur
 
-    def aggregate(self, pipeline, **kwargs):
-        #punt on aggregates for now
-        return []
+    def _aggregate(self, pipeline, **kwargs):
 
-        #possible solution might look like this:
+        # for now, we use mongo for this functionality
+        # possible solution might look like this:
+
         current = None
         for item in pipeline:
             operation = item.keys()[0]
@@ -533,8 +533,6 @@ class Collection(collection.Collection):
         for doc, mspec in self._find(spec):
             self._deindex(doc)
             mspec.update(updates)
-            doc = mspec.as_dict()
-            self._data[doc['_id']] = doc
             self._index(doc)
             result['n'] += 1
             result['nModified'] += 1
@@ -1076,14 +1074,13 @@ class Match(object):
 class MatchDoc(Match):
     def __init__(self, doc):
         self._orig = doc
-        self._doc = {}
         for k,v in six.iteritems(doc):
             if isinstance(v, list):
-                self._doc[k] = MatchList(v)
+                self._orig[k] = MatchList(v)
             elif isinstance(v, dict):
-                self._doc[k] = MatchDoc(v)
+                self._orig[k] = MatchDoc(v)
             else:
-                self._doc[k] = v
+                self._orig[k] = v
 
     def _as_dict(self, d):
         if isinstance(d, dict):
@@ -1104,57 +1101,56 @@ class MatchDoc(Match):
             if '.' in first:
                 return self.traverse(*(first.split('.')))
             return self, first
-        if first not in self._doc:
-            self._doc[first] = MatchDoc({})
-        if self._doc[first] is None:
+        if first not in self._orig:
+            self._orig[first] = MatchDoc({})
+        if self._orig[first] is None:
             return MatchDoc({}), None
         return self[first].traverse(*rest)
     def iteritems(self):
-        return six.iteritems(self._doc)
+        return six.iteritems(self._orig)
     def items(self):
         return self.iteritems()
     def __eq__(self, o):
-        return isinstance(o, MatchDoc) and self._doc == o._doc
+        return isinstance(o, MatchDoc) and self._orig == o._orig
     def __hash__(self):
-        return hash(self._doc)
+        return hash(self._orig)
     def __repr__(self):
-        return 'M%r' % (self._doc,)
+        return 'MatchDoc%r' % (self._orig,)
     def __getitem__(self, key):
-        return self._doc[key]
+        return self._orig[key]
     def __delitem__(self, key):
-        del self._doc[key]
+        del self._orig[key]
         del self._orig[key]
     def __setitem__(self, key, value):
-        self._doc[key] = value
+        self._orig[key] = value
         self._orig[key] = value
     def setdefault(self, key, default):
         self._orig.setdefault(key, default)
-        return self._doc.setdefault(key, default)
+        return self._orig.setdefault(key, default)
     def keys(self):
-        return self._doc.keys()
+        return self._orig.keys()
 
 
 class MatchList(Match):
     def __init__(self, doc, pos=None):
-        self._orig = doc
-        self._doc = []
+        self._orig = []
         for ele in doc:
             if isinstance(ele, list):
-                self._doc.append(MatchList(ele))
+                self._orig.append(MatchList(ele))
             elif isinstance(ele, dict):
-                self._doc.append(MatchDoc(ele))
+                self._orig.append(MatchDoc(ele))
             else:
-                self._doc.append(ele)
+                self._orig.append(ele)
         self._pos = pos
     def __iter__(self):
-        return iter(self._doc)
+        return iter(self._orig)
     def traverse(self, first, *rest):
         if not rest:
             return self, first
         return self[first].traverse(*rest)
     def match(self, key, op, value):
         if key == '$':
-            for i, item in enumerate(self._doc):
+            for i, item in enumerate(self._orig):
                 if self.match(i, op, value):
                     if self._pos is None:
                         self._pos = i
@@ -1171,37 +1167,35 @@ class MatchList(Match):
                 return True
 
     def __eq__(self, o):
-        return isinstance(o, MatchList) and self._doc == o._doc
+        return isinstance(o, MatchList) and self._orig == o._orig
     def __contains__(self, item):
         if isinstance(item, MatchDoc):
             item = item.as_dict()
-        return self._doc.__contains__(item)
+        return self._orig.__contains__(item)
     def __hash__(self):
-        return hash(self._doc)
+        return hash(self._orig)
     def __repr__(self):
-        return 'M<%r>%r' % (self._pos, self._doc)
+        return 'MatchList<%r>%r' % (self._pos, self._orig)
     def __getitem__(self, key):
         try:
             if key == '$':
                 if self._pos is None:
-                    return self._doc[0]
+                    return self._orig[0]
                 else:
-                    return self._doc[self._pos]
+                    return self._orig[self._pos]
             else:
-                return self._doc[int(key)]
+                return self._orig[int(key)]
         except IndexError:
             raise KeyError(key)
     def __setitem__(self, key, value):
         if key == '$':
             key = self._pos
-        if isinstance(self._doc, list):
+        if isinstance(self._orig, list):
             key = int(key)
-        self._doc[key] = value
         self._orig[key] = value
     def __delitem__(self, key):
         if key == '$':
             key = self._pos
-        del self._doc[int(key)]
         del self._orig[int(key)]
     def setdefault(self, key, default):
         if key == '$':
@@ -1209,12 +1203,10 @@ class MatchList(Match):
         if key <= len(self._orig):
             return self._orig[key]
         while key >= len(self._orig):
-            self._doc.append(None)
             self._orig.append(None)
-        self._doc[key] = default
+            self._orig.append(None)
         self._orig[key] = default
     def append(self, item):
-        self._doc.append(item)
         self._orig.append(item)
 
 
@@ -1288,13 +1280,22 @@ def validate(doc):
 def bson_safe(obj):
     bson.BSON.encode(obj)
 
-def bcopy(obj):
+
+def _bcopy(obj):
+    if isinstance(obj, MatchDoc):
+        return bson.BSON.encode(obj.as_dict()).decode()
+    if isinstance(obj, MatchList):
+        return list(map(_bcopy, obj))
     if isinstance(obj, dict):
-        return bson.BSON.encode(obj).decode()
+        return bson.BSON.encode({k: _bcopy(v) for k, v in obj.iteritems()}).decode()
     elif isinstance(obj, list):
-        return list(map(bcopy, obj))
+        return list(map(_bcopy, obj))
     else:
         return obj
+
+
+def bcopy(obj):
+    return _bcopy(obj)
 
 def wrap_as_class(value, as_class):
     if isinstance(value, dict):
