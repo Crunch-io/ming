@@ -647,7 +647,7 @@ class Collection(collection.Collection):
         for key in keys:
             sub, key = _traverse_doc(doc, key[0])
             key_values.append(sub.get(key, None))
-        return bson.BSON.encode({'k': key_values})
+        return bson.BSON.encode({'k': bcopy(key_values)})
 
     def _index(self, doc):
         if '_id' not in doc: return
@@ -1007,9 +1007,16 @@ class Match(object):
         subdoc[key] += arg
 
     def _op_set(self, subdoc, key, arg):
-        if isinstance(subdoc, list):
+        if isinstance(subdoc, (list, MatchList)):
+            #print arg
+            #import ipdb; ipdb.set_trace()
             key = int(key)
-        subdoc[key] = bcopy(arg)
+        value = bcopy(arg)
+        if isinstance(value, dict):
+            value = MatchDoc(value)
+        if isinstance(value, list):
+            value = MatchList(value)
+        subdoc[key] = value
 
     def _op_setOnInsert(self, subdoc, key, arg):
         subdoc[key] = bcopy(arg)
