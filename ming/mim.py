@@ -1008,8 +1008,6 @@ class Match(object):
 
     def _op_set(self, subdoc, key, arg):
         if isinstance(subdoc, (list, MatchList)):
-            #print arg
-            #import ipdb; ipdb.set_trace()
             key = int(key)
         value = bcopy(arg)
         if isinstance(value, dict):
