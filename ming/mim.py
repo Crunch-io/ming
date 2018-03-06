@@ -1121,6 +1121,8 @@ class MatchDoc(Match):
         return hash(self._orig)
     def __repr__(self):
         return 'MatchDoc%r' % (self._orig,)
+    def __contains__(self, item):
+        return item in self._orig.keys()
     def __getitem__(self, key):
         return self._orig[key]
     def __delitem__(self, key):
