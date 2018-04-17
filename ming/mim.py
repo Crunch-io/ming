@@ -530,13 +530,21 @@ class Collection(collection.Collection):
             n=0,
             nModified=0
         )
-        for doc, mspec in self._find(spec):
+
+        specs = [(doc, mspec) for doc, mspec in self._find(spec)]
+
+        for doc, mspec in specs:
             self._deindex(doc)
+
+        for doc, mspec in specs:
             mspec.update(updates)
+
+        for doc, mspec in specs:
             self._index(doc)
             result['n'] += 1
             result['nModified'] += 1
             if not multi: break
+
         if result['n']:
             result['updatedExisting'] = True
             return result
